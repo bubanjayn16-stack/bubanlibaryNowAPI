@@ -1,70 +1,83 @@
-﻿using bubanlibaryNowAPI.Models;
-using Microsoft.AspNetCore.Http;
+using bubanlibaryNowAPI.Models;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Cryptography.X509Certificates;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace bubanlibaryNowAPI.Controllers
 {
     [Route("api/v1/books")]
     [ApiController]
-
-    public class bubanlibaryNowAPI : ControllerBase
+    public class BooksController : ControllerBase
     {
-        private static List<Book> books = new List<Book>
-       {
-           new Book { Id = 1, Title = "Theo Of Golden" , Author = "Allen Levi", Genre = "Contemporary Fiction" ,Available = true, PublishedYear = 2025 },
-           new Book { Id = 2, Title = "Theo " , Author = " Levi", Genre = " Fiction" ,Available = true, PublishedYear = 2020 }
+        // Static list acts as a temporary in-memory database
+        private static readonly List<Book> books = new List<Book>
+        {
+            new Book { Id = 1, Title = "Theo Of Golden", Author = "Allen Levi", Genre = "Contemporary Fiction", Available = true, PublishedYear = 2025 },
+            new Book { Id = 2, Title = "Theo", Author = "Levi", Genre = "Fiction", Available = true, PublishedYear = 2020 }
+        };
 
-       };
-
+        // GET: api/v1/books
         [HttpGet]
         public IActionResult GetAll()
         {
-            return Ok(new { status = "sucess", data = books, message = "Books retrieved" });
+            return Ok(new { status = "success", data = books, message = "Books retrieved successfully" });
         }
+
+        // GET: api/v1/books/{id}
         [HttpGet("{id}")]
         public IActionResult GetById(int id)
         {
             var book = books.FirstOrDefault(b => b.Id == id);
             if (book == null)
+            {
+                return NotFound(new { status = "error", data = (object?)null, message = "Book not found" });
+            }
 
-                return NotFound(new { status = "error", data = (object?)null, message = "s not found" });
-            return Ok(new { status = "success", data = books, message = "Books Retrieved" });
-
+            return Ok(new { status = "success", data = book, message = "Book retrieved" });
         }
-        [HttpPost("{id}")]
-        public IActionResult Create([FromBody] Book newbook)
+
+        // POST: api/v1/books
+        [HttpPost]
+        public IActionResult Create([FromBody] Book newBook)
         {
-            newbook.Id = books.Count + 1;
-            books.Add(newbook);
-            return CreatedAtAction(nameof(GetById), new { id = newbook.Id },
-            new { status = "success", data = books, message = "Books retrieved" });
+            newBook.Id = books.Any() ? books.Max(b => b.Id) + 1 : 1;
+            books.Add(newBook);
+
+            return CreatedAtAction(nameof(GetById), new { id = newBook.Id }, 
+                new { status = "success", data = newBook, message = "Book created successfully" });
         }
-        [HttpPut]
-        public IActionResult Update(int id, [FromBody] Book Updatebook)
+
+        // PUT: api/v1/books/{id}
+        [HttpPut("{id}")]
+        public IActionResult Update(int id, [FromBody] Book updatedBook)
         {
             var book = books.FirstOrDefault(b => b.Id == id);
             if (book == null)
-                return NotFound(new { status = "error", data = (object?)null, messagae = "s not found." });
-            book.Title = Updatebook.Title;
-            book.Author = Updatebook.Author;
-            book.Genre = Updatebook.Genre;
-            book.Available = Updatebook.Available;
-            book.PublishedYear = Updatebook.PublishedYear;
-            return Ok(new { status = "success", data = books, message = "Books retrieved" });
+            {
+                return NotFound(new { status = "error", data = (object?)null, message = "Book not found" });
+            }
 
+            book.Title = updatedBook.Title;
+            book.Author = updatedBook.Author;
+            book.Genre = updatedBook.Genre;
+            book.Available = updatedBook.Available;
+            book.PublishedYear = updatedBook.PublishedYear;
+
+            return Ok(new { status = "success", data = book, message = "Book updated successfully" });
         }
+
+        // DELETE: api/v1/books/{id}
         [HttpDelete("{id}")]
         public IActionResult Delete(int id)
         {
-            var book = books.FirstOrDefault(book => book.Id == id);
+            var book = books.FirstOrDefault(b => b.Id == id);
             if (book == null)
-                return NotFound(new { status = "error", data = (object?)null, messagae = "s not found." });
+            {
+                return NotFound(new { status = "error", data = (object?)null, message = "Book not found" });
+            }
+
             books.Remove(book);
-            return Ok(new { status = "success", data = books, message = "Books retrieved" });
-
-
+            return Ok(new { status = "success", data = (object?)null, message = "Book deleted successfully" });
         }
     }
 }
